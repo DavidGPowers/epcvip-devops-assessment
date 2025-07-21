@@ -10,4 +10,4 @@ if [ -z "${TARGET_ENVIRONMENT}" ]; then
 fi
 
 echo "Running terraform plan for target environment ${TARGET_ENVIRONMENT}."
-terraform -chdir="${TERRAFORM_DIR}" plan -var="${target_environment=TARGET_ENVIRONMENT}"
+terraform -chdir="${TERRAFORM_DIR}" plan -var="target_environment=${TARGET_ENVIRONMENT}"

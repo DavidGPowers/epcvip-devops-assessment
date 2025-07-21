@@ -20,13 +20,7 @@ resource "aws_s3_bucket" "alb_access_logs_bucket" {
   # Server-side encryption is now managed via the aws_s3_bucket_server_side_encryption_configuration resource.
   # Lifecycle rules are now managed via the aws_s3_bucket_lifecycle_configuration resource.
 
-  # Optional: Enable versioning to prevent accidental deletion and support recovery
-  dynamic "versioning" {
-    for_each = var.access_logs_s3_bucket_versioning_enabled ? [1] : []
-    content {
-      enabled = true
-    }
-  }
+  # Removed: The 'dynamic "versioning"' block is deprecated and moved to a dedicated resource.
 
   tags = merge(
     local.common_tags,
@@ -35,6 +29,21 @@ resource "aws_s3_bucket" "alb_access_logs_bucket" {
     }
   )
 }
+
+# New resource: Manages S3 Bucket Versioning for the access logs bucket.
+# This replaces the deprecated 'versioning' block within the aws_s3_bucket resource.
+resource "aws_s3_bucket_versioning" "alb_access_logs_bucket_versioning" {
+  count = var.enable_access_logs && var.access_logs_s3_bucket_versioning_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.alb_access_logs_bucket[0].id
+  versioning_configuration {
+    status = "Enabled" # Always enabled if this resource is created
+  }
+
+  # Ensure this resource depends on the bucket being created first
+  depends_on = [aws_s3_bucket.alb_access_logs_bucket]
+}
+
 
 # Manages S3 Object Ownership for the bucket.
 # Required to ensure that objects written by other accounts (like ALB log delivery)
@@ -133,7 +142,7 @@ resource "aws_s3_bucket_policy" "alb_access_logs_bucket_policy" {
         Principal = {
           AWS = data.aws_elb_service_account.main[0].arn
         },
-        Action = "s3:GetBucketAcl",
+        Action   = "s3:GetBucketAcl",
         Resource = aws_s3_bucket.alb_access_logs_bucket[0].arn
       }
     ]

@@ -1,7 +1,7 @@
 locals {
-  project_name = "dp-webapp"
-  author       = "David Powers"
-  author_email = "david@powersemail.com"
+  project_name       = "dp-webapp"
+  author             = "David Powers"
+  author_email       = "david@powersemail.com"
   target_environment = var.target_environment
 
 

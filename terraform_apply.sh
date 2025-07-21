@@ -14,7 +14,7 @@ fi
 
 # prefer to run plan with planfile over simple apply with -auto-approve
 echo "Running terraform plan for target environment ${TARGET_ENVIRONMENT}."
-terraform -chdir=./terraform plan -var="${target_environment=TARGET_ENVIRONMENT}" "${PLAN_FILE}"
+terraform -chdir=./terraform plan -var="target_environment=${TARGET_ENVIRONMENT}" -out "${PLAN_FILE}"
 
 echo "Running terraform apply for target environment ${TARGET_ENVIRONMENT}."
-terraform -chdir="${TERRAFORM_DIR}" apply -var="${target_environment=TARGET_ENVIRONMENT}"  "${PLAN_FILE}"
+terraform -chdir="${TERRAFORM_DIR}" apply -var="target_environment=${TARGET_ENVIRONMENT}" "${PLAN_FILE}"

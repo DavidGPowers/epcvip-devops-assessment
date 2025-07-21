@@ -8,8 +8,8 @@ resource "aws_lb" "shared_alb" {
   dynamic "access_logs" {
     for_each = var.enable_access_logs ? [1] : []
     content {
-      bucket = aws_s3_bucket.alb_access_logs_bucket[0].bucket
-      prefix = var.access_logs_s3_prefix
+      bucket  = aws_s3_bucket.alb_access_logs_bucket[0].bucket
+      prefix  = var.access_logs_s3_prefix
       enabled = true # This will always be true if the block is present due to for_each
     }
   }

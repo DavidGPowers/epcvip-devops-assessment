@@ -42,10 +42,10 @@ resource "aws_launch_template" "main" {
   block_device_mappings {
     device_name = "/dev/sda1" # Standard device name for the root volume
     ebs {
-      volume_size = var.root_volume_size # Size of the root volume in GiB
-      volume_type = var.root_volume_type # Type of the root volume (e.g., "gp2", "gp3")
-      delete_on_termination = true # Delete the volume when the instance is terminated
-      encrypted = true # Encrypt the EBS volume
+      volume_size           = var.root_volume_size # Size of the root volume in GiB
+      volume_type           = var.root_volume_type # Type of the root volume (e.g., "gp2", "gp3")
+      delete_on_termination = true                 # Delete the volume when the instance is terminated
+      encrypted             = true                 # Encrypt the EBS volume
     }
   }
 
@@ -121,7 +121,7 @@ resource "aws_key_pair" "generated_key_pair" {
   count = var.key_name_suffix != "" ? 1 : 0
 
   # The name of the key pair, combining the template prefix and the provided suffix.
-  key_name   = "${var.ec2_template_prefix}-${var.key_name_suffix}"
+  key_name = "${var.ec2_template_prefix}-${var.key_name_suffix}"
   # The public key material for the key pair.
   public_key = var.public_key_material
 

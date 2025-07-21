@@ -79,7 +79,7 @@ resource "aws_security_group" "alb_sg" {
     for_each = length(var.http_egress_cidrs) == 0 && length(var.http_egress_sg_ids) == 0 && length(var.https_egress_cidrs) == 0 && length(var.https_egress_sg_ids) == 0 ? [1] : []
     content {
       from_port   = 0
-      to_port     = 65535
+      to_port     = 0
       protocol    = "-1"
       cidr_blocks = ["0.0.0.0/0"]
       description = "Allow all outbound traffic by default with no explicit egress"
