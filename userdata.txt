@@ -1,0 +1,152 @@
+#!/bin/bash
+# This script is executed on EC2 instance launch as user data.
+# It installs necessary packages, configures Nginx with a self-signed SSL certificate,
+# and creates a dynamic index.html page based on instance metadata.
+
+echo "Starting user data script execution..."
+
+# Update system packages
+sudo dnf update -y
+
+# Install necessary packages
+echo "Installing curl, openssl, and nginx..."
+sudo dnf install -y curl openssl nginx
+
+# Start Nginx service and enable it to start on boot
+echo "Starting Nginx service..."
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# --- Fetch Instance Metadata (IMDSv2) ---
+# IMDSv2 requires a token for authentication.
+echo "Fetching IMDSv2 token..."
+TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+
+echo "Fetching instance metadata..."
+INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+LOCAL_IPV4=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
+PUBLIC_IPV4=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4 || echo "N/A") # Public IP might not exist
+SUBNET_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/network/interfaces/macs/$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/mac)/subnet-id)
+VPC_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/network/interfaces/macs/$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/mac)/vpc-id)
+AVAILABILITY_ZONE=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
+
+# Generate a simple index.html page with instance attributes
+echo "Generating index.html..."
+cat <<EOF > /usr/share/nginx/html/index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terraform EC2 Instance Info</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; color: #333; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background-color: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); max-width: 600px; width: 100%; text-align: center; }
+        h1 { color: #2c3e50; margin-bottom: 25px; }
+        p { margin-bottom: 15px; font-size: 1.1em; line-height: 1.6; }
+        strong { color: #3498db; }
+        .footer { margin-top: 30px; font-size: 0.9em; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to Your Terraform-Deployed EC2 Instance!</h1>
+        <p>This page was generated dynamically from instance metadata.</p>
+        <p><strong>Instance ID:</strong> ${INSTANCE_ID}</p>
+        <p><strong>Local IPv4:</strong> ${LOCAL_IPV4}</p>
+        <p><strong>Public IPv4:</strong> ${PUBLIC_IPV4}</p>
+        <p><strong>Subnet ID:</strong> ${SUBNET_ID}</p>
+        <p><strong>VPC ID:</strong> ${VPC_ID}</p>
+        <p><strong>Availability Zone:</strong> ${AVAILABILITY_ZONE}</p>
+        <div class="footer">
+            <p>&copy; $(date +%Y) Terraform Project. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+EOF
+
+# --- Configure Nginx with Self-Signed TLS Certificate ---
+echo "Generating self-signed SSL certificate..."
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout /etc/nginx/nginx.key \
+    -out /etc/nginx/nginx.crt \
+    -subj "/C=US/ST=CA/L=SimiValley/O=MyOrg/OU=IT/CN=example.com"
+
+echo "Configuring Nginx..."
+sudo tee /etc/nginx/nginx.conf > /dev/null <<EOF
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                      '\$status \$body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+
+    server {
+        listen 80;
+        server_name _;
+        return 301 https://\$host\$request_uri; # Redirect HTTP to HTTPS
+    }
+
+    server {
+        listen 443 ssl;
+        server_name _;
+
+        ssl_certificate /etc/nginx/nginx.crt;
+        ssl_certificate_key /etc/nginx/nginx.key;
+
+        ssl_session_cache shared:SSL:1m;
+        ssl_session_timeout 5m;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+            try_files \$uri \$uri/ =404;
+        }
+
+        error_page 404 /404.html;
+        location = /404.html {
+            internal;
+        }
+
+        error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+            internal;
+        }
+    }
+}
+EOF
+
+# Restart Nginx to apply changes
+echo "Restarting Nginx to apply new configuration..."
+sudo systemctl restart nginx
+
+echo "User data script completed."
+
