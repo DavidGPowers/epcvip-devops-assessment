@@ -29,13 +29,12 @@ resource "aws_launch_template" "main" {
   # Otherwise, it sets the key_name to null, meaning no key pair will be used.
   key_name = var.key_name_suffix != "" ? aws_key_pair.generated_key_pair[0].key_name : null
 
-  # A list of security group IDs to associate with the instances.
-  # These security groups control inbound and outbound traffic.
-  vpc_security_group_ids = var.vpc_security_group_ids
-
   # User data to provide when launching the instances.
   # This data is passed to the instance at launch time and can be used for bootstrapping.
   # It must be base64 encoded.
+  # SECURITY NOTE: Avoid including sensitive information directly in user_data.
+  # Consider using AWS Systems Manager (SSM Agent) to pull sensitive data from
+  # SSM Parameter Store (SecureString) or Secrets Manager for production environments.
   user_data = var.user_data == "" ? null : base64encode(var.user_data)
 
   # Configuration for block device mappings (e.g., EBS volumes).
@@ -48,6 +47,33 @@ resource "aws_launch_template" "main" {
       delete_on_termination = true # Delete the volume when the instance is terminated
       encrypted = true # Encrypt the EBS volume
     }
+  }
+
+  # Define network interface settings, including security groups and public IP association.
+  network_interfaces {
+    # A list of security group IDs to associate with the instance's primary network interface.
+    # SECURITY NOTE: Ensure these security groups adhere to the principle of least privilege.
+    # Open security groups are a common attack vector.
+    security_groups = var.vpc_security_group_ids
+    # Whether to associate a public IP address with the instance.
+    associate_public_ip_address = var.associate_public_ip_address
+    # Delete the network interface when the instance is terminated.
+    delete_on_termination = true
+  }
+
+  # Optional: Attach an IAM instance profile to the EC2 instance.
+  # This grants the instance permissions to interact with other AWS services.
+  dynamic "iam_instance_profile" {
+    for_each = var.iam_instance_profile_arn != "" ? [1] : []
+    content {
+      arn = var.iam_instance_profile_arn
+    }
+  }
+
+  # Optional: Enable detailed CloudWatch monitoring for the instance.
+  # Detailed monitoring provides 1-minute data, which is crucial for operational visibility.
+  monitoring {
+    enabled = var.enable_detailed_monitoring
   }
 
   # Tag specifications for resources created from this launch template.
@@ -190,7 +216,12 @@ variable "key_name_suffix" {
 }
 
 variable "public_key_material" {
-  description = "The public key material for the EC2 Key Pair. Required if 'key_name_suffix' is provided."
+  description = <<EOT
+The public key material for the EC2 Key Pair. Required if 'key_name_suffix' is provided.
+SECURITY NOTE: Directly embedding sensitive data like public key material in version control
+is generally discouraged. Consider retrieving this from a secure secrets manager (e.g., AWS Secrets Manager)
+or ensuring it's handled securely in your CI/CD pipeline.
+EOT
   type        = string
   default     = ""
 
@@ -201,16 +232,43 @@ variable "public_key_material" {
   }
 }
 
+variable "iam_instance_profile_arn" {
+  description = "The ARN of the IAM instance profile to associate with the instance. Set to empty string if no profile is desired."
+  type        = string
+  default     = ""
+}
+
 variable "vpc_security_group_ids" {
-  description = "A list of security group IDs to associate with the instances."
+  description = <<EOT
+A list of security group IDs to associate with the instances.
+SECURITY NOTE: Ensure these security groups adhere to the principle of least privilege.
+Open security groups are a common attack vector. Restrict inbound rules to specific ports and source IPs/SGs.
+EOT
   type        = list(string)
   default     = []
 }
 
 variable "user_data" {
-  description = "User data to provide when launching the instances. This data is passed to the instance at launch time and can be used for bootstrapping. It will be base64 encoded."
+  description = <<EOT
+User data to provide when launching the instances. This data is passed to the instance at launch time and can be used for bootstrapping. It will be base64 encoded.
+SECURITY NOTE: Avoid including sensitive information directly in user_data.
+Consider using AWS Systems Manager (SSM Agent) to pull sensitive data from
+SSM Parameter Store (SecureString) or Secrets Manager for production environments.
+EOT
   type        = string
   default     = ""
+}
+
+variable "associate_public_ip_address" {
+  description = "Whether to associate a public IP address with the instance's primary network interface. Defaults to false for security."
+  type        = bool
+  default     = false # Secure default
+}
+
+variable "enable_detailed_monitoring" {
+  description = "Enable detailed CloudWatch monitoring (1-minute data) for the instance. Standard monitoring is free, detailed costs extra."
+  type        = bool
+  default     = false
 }
 
 variable "root_volume_size" {
@@ -257,4 +315,3 @@ output "used_ami_id" {
   description = "The AMI ID actually used for the EC2 Launch Template."
   value       = local.ami_id_for_launch_template
 }
-
