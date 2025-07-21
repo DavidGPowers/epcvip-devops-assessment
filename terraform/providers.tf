@@ -12,10 +12,6 @@ terraform {
 provider "aws" {
   profile = "epcvip-asg"
   default_tags {
-    tags = {
-      TerraformProject = local.project_name
-      Author           = local.author
-      AuthorEmail      = local.author_email
-    }
+    tags = local.common_tags
   }
 }

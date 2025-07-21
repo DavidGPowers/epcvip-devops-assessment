@@ -5,7 +5,7 @@ variable "alb_name" {
 }
 
 variable "target_environment" {
-  description = "The target environment (e.g., dev, test, prod) to append to resource names."
+  description = "The target environment (e.g., dev, uat, prd) to append to resource names."
   type        = string
 }
 
