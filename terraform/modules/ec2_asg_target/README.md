@@ -1,8 +1,3 @@
-
-======================================================================
-./terraform/modules/ec2_asg_target/README.md
-======================================================================
-
 # Terraform Module: EC2 Auto Scaling Group Target
 
 This module creates the necessary AWS resources to run a scalable web application behind an Application Load Balancer (ALB). It links an ALB Target Group with an Auto Scaling Group (ASG) of EC2 instances.

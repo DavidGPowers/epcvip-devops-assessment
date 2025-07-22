@@ -1,8 +1,3 @@
-
-======================================================================
-./terraform/modules/ec2_launch_template/README.md
-======================================================================
-
 # Terraform Module: EC2 Launch Template
 
 This module creates a versionable EC2 Launch Template on AWS. It is designed to define the configuration for instances that will be launched by an Auto Scaling Group, promoting immutable infrastructure and secure instance management.
