@@ -9,6 +9,7 @@ module "ec2_launch_template" {
   # Pass the content of user_data.sh directly
   user_data = file("../ec2_config/ec2_user_data.txt")
 
+  vpc_security_group_ids     = [module.ec2_asg_target.ec2_target_security_group_id]
   enable_detailed_monitoring = true
 
   tags = local.common_tags

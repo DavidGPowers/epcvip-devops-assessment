@@ -1,13 +1,12 @@
 
-module "web_app_service" {
+module "ec2_asg_target" {
   source = "./modules/ec2_asg_target" # Adjust the path to this module
 
-  app_name           = local.project_name
-  target_environment = local.target_environment
-  vpc_id             = module.basic_vpc.vpc_id
-  subnet_ids         = module.basic_vpc.private_subnet_ids
-
-  alb_arn = module.shared_alb.alb_arn
+  app_name                     = local.project_name
+  target_environment           = local.target_environment
+  vpc_id                       = module.basic_vpc.vpc_id
+  subnet_ids                   = module.basic_vpc.private_subnet_ids
+  alb_source_security_group_id = module.shared_alb.alb_security_group_id
 
   # Target Group configuration
   target_group_port     = 80
@@ -25,12 +24,12 @@ module "web_app_service" {
   tags = local.common_tags
 }
 
-output "web_app_target_group_arn" {
+output "ec2_asg_target_group_arn" {
   description = "The ARN of the web application's ALB Target Group."
-  value       = module.web_app_service.target_group_arn
+  value       = module.ec2_asg_target.target_group_arn
 }
 
-output "web_app_autoscaling_group_name" {
+output "ec2_asg_target_asg_name" {
   description = "The name of the web application's Auto Scaling Group."
-  value       = module.web_app_service.autoscaling_group_name
+  value       = module.ec2_asg_target.autoscaling_group_name
 }

@@ -27,9 +27,9 @@ variable "subnet_ids" {
   }
 }
 
-# ALB Target Group Configuration
-variable "alb_arn" {
-  description = "The ARN of the existing Application Load Balancer to which this target group will be associated."
+# ALB Configuration
+variable "alb_source_security_group_id" {
+  description = "The ID of the security group attached to the ALB. This is used to allow traffic from the ALB to the EC2 instances."
   type        = string
 }
 
@@ -49,6 +49,7 @@ variable "target_group_protocol" {
   }
 }
 
+# Health Check Configuration
 variable "health_check_path" {
   description = "The destination for the health check request. For HTTP/HTTPS, this is a URL path. For TCP/SSL, it's ignored."
   type        = string
