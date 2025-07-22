@@ -1,5 +1,5 @@
 module "basic_vpc" {
-  source = "./modules/basic_vpc" # Adjust the path to this module
+  source = "./modules/basic_vpc"
 
   project_name         = "dp-webapp"
   environment          = "dev"

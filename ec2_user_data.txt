@@ -9,8 +9,8 @@ echo "Starting user data script execution..."
 sudo dnf update -y
 
 # Install necessary packages
-echo "Installing curl, openssl, and nginx..."
-sudo dnf install -y curl openssl nginx
+echo "Installing openssl, and nginx..."
+sudo dnf install -y openssl nginx
 
 # Start Nginx service and enable it to start on boot
 echo "Starting Nginx service..."
@@ -25,7 +25,6 @@ TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-meta
 echo "Fetching instance metadata..."
 INSTANCE_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
 LOCAL_IPV4=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4)
-PUBLIC_IPV4=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/public-ipv4 || echo "N/A") # Public IP might not exist
 SUBNET_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/network/interfaces/macs/$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/mac)/subnet-id)
 VPC_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/network/interfaces/macs/$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/mac)/vpc-id)
 AVAILABILITY_ZONE=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/availability-zone)
@@ -50,11 +49,11 @@ cat <<EOF > /usr/share/nginx/html/index.html
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Your Terraform-Deployed EC2 Instance!</h1>
+        <h1>Hello, DevOps Test!</h1>
+        <h2>Welcome to Your Terraform-Deployed EC2 Instance!</h2>
         <p>This page was generated dynamically from instance metadata.</p>
         <p><strong>Instance ID:</strong> ${INSTANCE_ID}</p>
         <p><strong>Local IPv4:</strong> ${LOCAL_IPV4}</p>
-        <p><strong>Public IPv4:</strong> ${PUBLIC_IPV4}</p>
         <p><strong>Subnet ID:</strong> ${SUBNET_ID}</p>
         <p><strong>VPC ID:</strong> ${VPC_ID}</p>
         <p><strong>Availability Zone:</strong> ${AVAILABILITY_ZONE}</p>
@@ -110,7 +109,25 @@ http {
     server {
         listen 80;
         server_name _;
-        return 301 https://\$host\$request_uri; # Redirect HTTP to HTTPS
+
+        # for production use force https
+        # return 301 https://\$host\$request_uri; # Redirect HTTP to HTTPS
+        # instead just show page!
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+            try_files \$uri \$uri/ =404;
+        }
+
+        error_page 404 /404.html;
+        location = /404.html {
+            internal;
+        }
+
+        error_page 500 502 503 504 /50x.html;
+        location = /50x.html {
+            internal;
+        }
     }
 
     server {
