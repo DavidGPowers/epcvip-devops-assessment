@@ -4,11 +4,6 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-data "aws_ssm_parameters_by_path" "aft_custom_fields" {
-  path = "/aft/account-request/custom-fields"
-}
-
-
 # in production it is likely that networking will exist and be discoverable via tags
 # data "aws_vpc" "app_vpc" {
 #   filter {
