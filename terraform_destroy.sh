@@ -6,7 +6,7 @@ TERRAFORM_DIR="./terraform"
 
 TARGET_ENVIRONMENT="${1}"
 if [ -z "${TARGET_ENVIRONMENT}" ]; then
-	echo "usage: ${0} {dev,uat,prod}"
+	echo "usage: ${0} {dev,uat,prd}"
 	exit -1
 fi
 
