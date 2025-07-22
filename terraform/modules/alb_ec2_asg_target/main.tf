@@ -36,11 +36,11 @@ resource "aws_lb_target_group" "app_target_group" {
 # ensuring the desired capacity is maintained and instances are registered
 # with the target group.
 resource "aws_autoscaling_group" "app_asg" {
-  name                      = local.app_asg_name
-  max_size                  = var.max_size
-  min_size                  = var.min_size
-  desired_capacity          = var.desired_capacity
-  vpc_zone_identifier       = var.subnet_ids
+  name                = local.app_asg_name
+  max_size            = var.max_size
+  min_size            = var.min_size
+  desired_capacity    = var.desired_capacity
+  vpc_zone_identifier = var.subnet_ids
 
   # Reference the existing Launch Template for instance configuration
   launch_template {

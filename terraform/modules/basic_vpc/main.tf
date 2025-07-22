@@ -32,11 +32,10 @@ resource "aws_internet_gateway" "main" {
 # 3. Public Subnets
 # These subnets will be associated with a route table that routes traffic to the Internet Gateway.
 resource "aws_subnet" "public" {
-  count                   = length(var.public_subnet_cidrs)
-  vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_cidrs[count.index]
-  availability_zone       = data.aws_availability_zones.available.names[count.index]
-  map_public_ip_on_launch = true # Instances in public subnets should get public IPs
+  count             = length(var.public_subnet_cidrs)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.public_subnet_cidrs[count.index]
+  availability_zone = data.aws_availability_zones.available.names[count.index]
 
   tags = merge(
     local.common_tags,

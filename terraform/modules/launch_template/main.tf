@@ -7,14 +7,14 @@
 resource "aws_iam_role" "ssm_role" {
   count = var.create_ssm_instance_profile ? 1 : 0
 
-  name_prefix        = "${var.ec2_template_prefix}-ssm-role-"
+  name_prefix = "${var.ec2_template_prefix}-ssm-role-"
   assume_role_policy = jsonencode({
-    Version   = "2012-10-17",
+    Version = "2012-10-17",
     Statement = [
       {
-        Action    = "sts:AssumeRole",
-        Effect    = "Allow",
-        Sid       = "EC2AssumeRole",
+        Action = "sts:AssumeRole",
+        Effect = "Allow",
+        Sid    = "EC2AssumeRole",
         Principal = {
           Service = "ec2.amazonaws.com"
         }
@@ -53,7 +53,7 @@ resource "aws_launch_template" "main" {
   image_id      = local.ami_id_for_launch_template
   instance_type = var.instance_type
   # key_name is no longer needed as access is managed by SSM Session Manager.
-  user_data     = var.user_data == "" ? null : base64encode(var.user_data)
+  user_data = var.user_data == "" ? null : base64encode(var.user_data)
 
   block_device_mappings {
     device_name = "/dev/sda1"
