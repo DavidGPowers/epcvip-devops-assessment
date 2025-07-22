@@ -19,8 +19,8 @@ module "ec2_asg_target" {
   launch_template_version = module.ec2_launch_template.launch_template_latest_version
   desired_capacity        = 2
   # min_size could be 1 but 2 yeilds multi-az resiliency
-  min_size                = 2
-  max_size                = 6
+  min_size = 2
+  max_size = 6
 
   # in prod with shared alb rules will likely include path and/or host headers
   alb_listener_arn           = module.shared_alb.alb_listener_http_arn

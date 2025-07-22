@@ -10,6 +10,9 @@ resource "aws_lb_target_group" "app_target_group" {
   protocol = var.target_group_protocol
   vpc_id   = var.vpc_id
 
+  # short deregistration delay to reduce scale down time - consider parameterization for prod
+  deregistration_delay = 20
+
   health_check {
     path                = var.health_check_path
     port                = var.health_check_port

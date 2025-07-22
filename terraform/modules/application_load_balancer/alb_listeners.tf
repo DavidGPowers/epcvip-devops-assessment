@@ -7,6 +7,8 @@ resource "aws_lb_listener" "shared_alb_listener_http" {
 
   default_action {
     type = "fixed-response"
+
+    # in production use a friendly "system maintenance" or similar page for shared ALB
     fixed_response {
       content_type = "text/plain"
       message_body = "No matching rule found. Default fixed-response triggered. ${local.http_listener_name} HTTP:${var.http_port}"
@@ -32,6 +34,7 @@ resource "aws_lb_listener" "shared_alb_listener_https" {
 
   default_action {
     type = "fixed-response"
+    # in production use a friendly "system maintenance" or similar page for shared ALB
     fixed_response {
       content_type = "text/plain"
       message_body = "No matching rule found. Default fixed-response triggered. ${local.https_listener_name} HTTPS:${var.https_port}"

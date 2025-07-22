@@ -35,7 +35,7 @@ TERRAFORM_DIR="./terraform"
 STRESS_DURATION=360 # 6 minutes
 
 # Cooldown period to allow for scale-down activity after the test.
-COOLDOWN_PERIOD=360 # 6 minutes
+COOLDOWN_PERIOD=600 # 10 minutes
 
 # --- Script Logic ---
 
@@ -81,7 +81,6 @@ aws autoscaling describe-auto-scaling-groups \
     --output table
 
 INSTANCE_IDS=""
-# FIX: Removed single quotes from '{1..12}' to enable brace expansion for the loop.
 for i in {1..12}; do # Retry for up to 120 seconds (12 * 10s)
     INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups \
         --auto-scaling-group-names "${ASG_NAME}" \
@@ -111,20 +110,31 @@ echo
 echo "Sending stress test command to all instances via SSM..."
 echo "This will generate high CPU load for ${STRESS_DURATION} seconds ($((STRESS_DURATION / 60)) minutes)."
 
-# FIX: Define STRESS_TIME as a variable on the remote host to avoid local shell expansion issues.
+# FINAL FIX: The here-document template MUST contain valid JSON.
+# This means double quotes inside the command strings must be escaped with a backslash.
+PARAMETERS_TEMPLATE=$(cat <<'EOF'
+{
+  "commands": [
+    "sudo yum update -y",
+    "sudo yum install -y stress",
+    "STRESS_TIME=__DURATION__",
+    "NPROC=$(nproc)",
+    "echo \"Stressing ${NPROC} cores for ${STRESS_TIME} seconds...\"",
+    "stress --cpu ${NPROC} --timeout ${STRESS_TIME}s"
+  ]
+}
+EOF
+)
+# Safely replace the placeholder with the actual duration value.
+PARAMETERS_JSON=$(echo "${PARAMETERS_TEMPLATE}" | sed "s/__DURATION__/${STRESS_DURATION}/")
+
+
 COMMAND_ID=$(aws ssm send-command \
     --region "${AWS_REGION}" \
     --instance-ids ${INSTANCE_IDS} \
     --document-name "AWS-RunShellScript" \
     --comment "CPU stress test for ASG ${ASG_NAME}" \
-    --parameters 'commands=[
-        "sudo yum update -y",
-        "sudo yum install -y stress",
-        "STRESS_TIME='"${STRESS_DURATION}"'",
-        "NPROC=$(nproc)",
-        "echo \"Stressing \${NPROC} cores for \${STRESS_TIME} seconds...\"",
-        "stress --cpu \${NPROC} --timeout \${STRESS_TIME}s"
-    ]' \
+    --parameters "${PARAMETERS_JSON}" \
     --query "Command.CommandId" \
     --output text)
 
