@@ -6,10 +6,10 @@
 # This target group will be registered with the Application Load Balancer
 # and will forward traffic to the EC2 instances launched by the Auto Scaling Group.
 resource "aws_lb_target_group" "app_target_group" {
-  name_prefix = "${local.app_target_group_name_prefix}-"
-  port        = var.target_group_port
-  protocol    = var.target_group_protocol
-  vpc_id      = var.vpc_id
+  # name_prefix = "${local.app_target_group_name_prefix}"
+  port     = var.target_group_port
+  protocol = var.target_group_protocol
+  vpc_id   = var.vpc_id
 
   # Health check configuration
   health_check {
