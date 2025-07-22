@@ -11,7 +11,7 @@ resource "aws_vpc" "main" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-vpc"
+      Name = "${var.project_name}-${var.target_environment}-vpc"
     }
   )
 }
@@ -24,7 +24,7 @@ resource "aws_internet_gateway" "main" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-igw"
+      Name = "${var.project_name}-${var.target_environment}-igw"
     }
   )
 }
@@ -40,7 +40,7 @@ resource "aws_subnet" "public" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-public-subnet-${count.index + 1}"
+      Name = "${var.project_name}-${var.target_environment}-public-subnet-${count.index + 1}"
     }
   )
 }
@@ -56,7 +56,7 @@ resource "aws_subnet" "private" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-private-subnet-${count.index + 1}"
+      Name = "${var.project_name}-${var.target_environment}-private-subnet-${count.index + 1}"
     }
   )
 }
@@ -71,7 +71,7 @@ resource "aws_eip" "nat_gateway_eip" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-nat-eip"
+      Name = "${var.project_name}-${var.target_environment}-nat-eip"
     }
   )
 }
@@ -86,7 +86,7 @@ resource "aws_nat_gateway" "main" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-nat-gw"
+      Name = "${var.project_name}-${var.target_environment}-nat-gw"
     }
   )
 
@@ -107,7 +107,7 @@ resource "aws_route_table" "public" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-public-rt"
+      Name = "${var.project_name}-${var.target_environment}-public-rt"
     }
   )
 }
@@ -133,7 +133,7 @@ resource "aws_route_table" "private" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.project_name}-${var.environment}-private-rt"
+      Name = "${var.project_name}-${var.target_environment}-private-rt"
     }
   )
 }

@@ -19,7 +19,16 @@ module "ec2_asg_target" {
   launch_template_version = module.ec2_launch_template.launch_template_latest_version
   desired_capacity        = 2
   min_size                = 1
-  max_size                = 3
+  max_size                = 6
+
+  # in prod with shared alb rules will likely include path and/or host headers
+  alb_listener_arn           = module.shared_alb.alb_listener_http_arn
+  listener_rule_priority     = 10
+  listener_rule_http_methods = ["GET"]
+
+  enable_cpu_scaling_policies = true
+  scale_up_adjustment         = 2
+  scale_down_adjustment       = -2
 
   tags = local.common_tags
 }

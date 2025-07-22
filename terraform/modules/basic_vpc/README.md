@@ -28,7 +28,7 @@ This module provides a secure and highly available network foundation for deploy
 
 * **Automated Routing:** Configures route tables and associations for seamless traffic flow.
 
-* **Flexible Naming & Tagging:** Uses `project_name` and `environment` variables for consistent resource naming and supports custom tags.
+* **Flexible Naming & Tagging:** Uses `project_name` and `target_environment` variables for consistent resource naming and supports custom tags.
 
 ## Usage
 
@@ -39,7 +39,7 @@ module "my_vpc" {
   source = "./modules/basic-vpc" # Adjust the path to this module
 
   project_name       = "my-app"
-  environment        = "dev"
+  target_environment        = "dev"
   vpc_cidr_block     = "10.0.0.0/16"
   public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
   private_subnet_cidrs = ["10.0.101.0/24", "10.0.102.0/24"]
@@ -69,7 +69,7 @@ output "private_subnet_ids" {
 | Name | Description | Type | Default | Required |
 | ----- | ----- | ----- | ----- | ----- |
 | `project_name` | The name of the project. Used for naming resources. | `string` | n/a | yes |
-| `environment` | The deployment environment (e.g., 'dev', 'test', 'prod'). Used for naming resources and tagging. | `string` | n/a | yes |
+| `target_environment` | The deployment target_environment (e.g., 'dev', 'test', 'prod'). Used for naming resources and tagging. | `string` | n/a | yes |
 | `vpc_cidr_block` | The CIDR block for the VPC (e.g., '10.0.0.0/16'). | `string` | n/a | yes |
 | `public_subnet_cidrs` | A list of CIDR blocks for the public subnets. Must be at least two for high availability. | `list(string)` | n/a | yes |
 | `private_subnet_cidrs` | A list of CIDR blocks for the private subnets. Must be at least two for high availability. | `list(string)` | n/a | yes |

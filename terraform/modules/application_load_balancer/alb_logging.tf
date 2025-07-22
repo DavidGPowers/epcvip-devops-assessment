@@ -16,11 +16,11 @@ resource "aws_s3_bucket" "alb_access_logs_bucket" {
   count = var.enable_access_logs ? 1 : 0
 
   bucket = var.access_logs_s3_bucket_name
-  # Object ownership is now managed via the aws_s3_bucket_ownership_controls resource.
-  # Server-side encryption is now managed via the aws_s3_bucket_server_side_encryption_configuration resource.
-  # Lifecycle rules are now managed via the aws_s3_bucket_lifecycle_configuration resource.
+  # Object ownership managed via the aws_s3_bucket_ownership_controls resource.
+  # Server-side encryption is managed via the aws_s3_bucket_server_side_encryption_configuration resource.
+  # Lifecycle rules are  managed via the aws_s3_bucket_lifecycle_configuration resource.
 
-  # Removed: The 'dynamic "versioning"' block is deprecated and moved to a dedicated resource.
+  force_destroy = true
 
   tags = merge(
     local.common_tags,

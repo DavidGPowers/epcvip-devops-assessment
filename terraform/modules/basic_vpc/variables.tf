@@ -6,8 +6,8 @@ variable "project_name" {
   type        = string
 }
 
-variable "environment" {
-  description = "The deployment environment (e.g., 'dev', 'test', 'prod'). Used for naming resources and tagging."
+variable "target_environment" {
+  description = "The deployment target_environment (e.g., 'dev', 'uat', 'prd'). Used for naming resources and tagging."
   type        = string
 }
 

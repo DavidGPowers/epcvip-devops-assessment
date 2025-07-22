@@ -2,7 +2,7 @@ module "basic_vpc" {
   source = "./modules/basic_vpc"
 
   project_name         = "dp-webapp"
-  environment          = "dev"
+  target_environment   = "dev"
   vpc_cidr_block       = "10.100.0.0/16"
   public_subnet_cidrs  = ["10.100.1.0/24", "10.100.2.0/24"]
   private_subnet_cidrs = ["10.100.101.0/24", "10.100.102.0/24"]
