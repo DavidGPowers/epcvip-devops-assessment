@@ -66,6 +66,8 @@ cat <<EOF > /usr/share/nginx/html/index.html
 EOF
 
 # --- Configure Nginx with Self-Signed TLS Certificate ---
+# not necessary for this assessment task but demonstrates method to use ephemeral self-signed certs in targets
+# to support full-path TLS
 echo "Generating self-signed SSL certificate..."
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout /etc/nginx/nginx.key \

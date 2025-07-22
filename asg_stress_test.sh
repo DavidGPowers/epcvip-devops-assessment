@@ -5,19 +5,31 @@ set -euo pipefail
 # and observe the scaling activity. It dynamically retrieves the ASG name from
 # the Terraform state based on the target environment.
 
-# Prerequisites:
-# 1. AWS CLI installed and configured.
-# 2. AWS Session Manager (SSM) plugin for the AWS CLI installed.
-# 3. The Terraform state for the target environment must exist (i.e., 'terraform apply' has been run).
-# 4. EC2 instances must have the SSM Agent installed and have an IAM instance profile
-#    with the 'AmazonSSMManagedInstanceCore' policy attached. The launch template in
-#    this project already handles this.
+# --- Dependency Check ---
+# Ensure all required command-line tools are installed before proceeding.
+check_deps() {
+    local missing_deps=0
+    if ! command -v terraform &> /dev/null; then
+        echo "Error: 'terraform' command not found. Please install Terraform."
+        missing_deps=1
+    fi
+    if ! command -v aws &> /dev/null; then
+        echo "Error: 'aws' command not found. Please install the AWS CLI."
+        missing_deps=1
+    fi
+    if ! command -v session-manager-plugin &> /dev/null; then
+        echo "Error: 'session-manager-plugin' command not found. Please install the AWS Session Manager plugin."
+        missing_deps=1
+    fi
+    if [ "$missing_deps" -ne 0 ]; then
+        echo "Please install missing dependencies and try again."
+        exit 1
+    fi
+}
+check_deps # Run the dependency check
 
 # --- Configuration ---
 TERRAFORM_DIR="./terraform"
-
-# The AWS region where your resources are deployed.
-AWS_REGION="us-east-2" # <--- Adjust if you deployed to a different region.
 
 # Duration of the stress test in seconds.
 STRESS_DURATION=360 # 6 minutes
@@ -38,44 +50,68 @@ fi
 echo "Target environment set to: ${TARGET_ENVIRONMENT}"
 echo "----------------------------------------------------------------"
 
-# 2. Retrieve the Auto Scaling Group name from the Terraform output.
-#    This assumes you have already run 'terraform_init.sh <env>' so the state is configured.
+# 2. Automatically determine the AWS region from the AWS CLI config, with a fallback.
+AWS_REGION=$(aws configure get region)
+AWS_REGION=${AWS_REGION:-us-east-1} # Fallback to us-east-1 if not configured
+echo "Using AWS Region: ${AWS_REGION}"
+
+# 3. Retrieve the Auto Scaling Group name from the Terraform output.
 echo "Retrieving Auto Scaling Group name from Terraform state..."
 ASG_NAME=$(terraform -chdir="${TERRAFORM_DIR}" output -raw ec2_asg_target_asg_name)
 
 if [ -z "${ASG_NAME}" ]; then
     echo "Error: Could not retrieve Auto Scaling Group name from Terraform output."
-    echo "Please ensure you have run 'terraform_init.sh ${TARGET_ENVIRONMENT}' and 'terraform_apply.sh ${TARGET_ENVIRONMENT}' successfully."
+    echo "Please ensure you have run './terraform_init.sh ${TARGET_ENVIRONMENT}' and './terraform_apply.sh ${TARGET_ENVIRONMENT}' successfully."
     exit 1
 fi
 
 echo "Starting load test simulation for Auto Scaling Group: ${ASG_NAME}"
 echo "----------------------------------------------------------------"
 
-# 3. Get the list of running instance IDs in the Auto Scaling Group.
+# 4. Get the list of running instance IDs, waiting for them to become 'InService'.
 echo "Fetching target instance IDs from ASG..."
-INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups \
+echo "(Waiting up to 2 minutes for instances to become 'InService')..."
+
+# DEBUG: Dump the raw instance status from the ASG's perspective
+echo "Current instance states reported by API:"
+aws autoscaling describe-auto-scaling-groups \
     --auto-scaling-group-names "${ASG_NAME}" \
     --region "${AWS_REGION}" \
-    --query "AutoScalingGroups[0].Instances[?LifecycleState=='InService'].InstanceId" \
-    --output text)
+    --query "AutoScalingGroups[0].Instances[*].{ID:InstanceId, State:LifecycleState, Health:HealthStatus}" \
+    --output table
 
-if [ -z "${INSTANCE_IDS}" ]; then
-    echo "No running instances found in the Auto Scaling Group. Exiting."
+INSTANCE_IDS=""
+# FIX: Removed single quotes from '{1..12}' to enable brace expansion for the loop.
+for i in {1..12}; do # Retry for up to 120 seconds (12 * 10s)
+    INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups \
+        --auto-scaling-group-names "${ASG_NAME}" \
+        --region "${AWS_REGION}" \
+        --query "AutoScalingGroups[0].Instances[?LifecycleState=='InService'].InstanceId" \
+        --output text)
+
+    if [ -n "${INSTANCE_IDS}" ] && [ "${INSTANCE_IDS}" != "None" ]; then
+        break
+    fi
+    echo -n "."
+    sleep 10
+done
+echo
+
+# Check if instances were found after waiting.
+if [ -z "${INSTANCE_IDS}" ] || [ "${INSTANCE_IDS}" == "None" ]; then
+    echo "No 'InService' instances found in the Auto Scaling Group after waiting. Exiting."
+    echo "Please check the AWS Console for instance health and ASG events."
     exit 0
 fi
 
 echo "Found instances to test: ${INSTANCE_IDS}"
 
-# 4. Use SSM Send-Command to install 'stress' and run the test on all instances.
-# The commands will:
-#   - Update the package manager (yum).
-#   - Install the 'stress' utility.
-#   - Run 'stress' to load all available CPU cores for the specified duration.
+# 5. Use SSM Send-Command to install 'stress' and run the test on all instances.
 echo
 echo "Sending stress test command to all instances via SSM..."
-echo "This will generate high CPU load for ${STRESS_DURATION} seconds (${STRESS_DURATION / 60} minutes)."
+echo "This will generate high CPU load for ${STRESS_DURATION} seconds ($((STRESS_DURATION / 60)) minutes)."
 
+# FIX: Define STRESS_TIME as a variable on the remote host to avoid local shell expansion issues.
 COMMAND_ID=$(aws ssm send-command \
     --region "${AWS_REGION}" \
     --instance-ids ${INSTANCE_IDS} \
@@ -84,9 +120,10 @@ COMMAND_ID=$(aws ssm send-command \
     --parameters 'commands=[
         "sudo yum update -y",
         "sudo yum install -y stress",
-        "nproc=$(nproc)",
-        "echo \"Stressing \${nproc} cores for ${STRESS_DURATION} seconds...\"",
-        "stress --cpu \${nproc} --timeout ${STRESS_DURATION}s"
+        "STRESS_TIME='"${STRESS_DURATION}"'",
+        "NPROC=$(nproc)",
+        "echo \"Stressing \${NPROC} cores for \${STRESS_TIME} seconds...\"",
+        "stress --cpu \${NPROC} --timeout \${STRESS_TIME}s"
     ]' \
     --query "Command.CommandId" \
     --output text)
@@ -97,10 +134,10 @@ sleep ${STRESS_DURATION}
 
 echo
 echo "Stress test duration has elapsed."
-echo "Waiting ${COOLDOWN_PERIOD} seconds (${COOLDOWN_PERIOD / 60} minutes) for ASG to cool down and scale in..."
+echo "Waiting ${COOLDOWN_PERIOD} seconds ($((COOLDOWN_PERIOD / 60)) minutes) for ASG to cool down and scale in..."
 sleep ${COOLDOWN_PERIOD}
 
-# 5. Dump the ASG activity log to show scale-up and scale-down events.
+# 6. Dump the ASG activity log to show scale-up and scale-down events.
 echo
 echo "Cooldown period finished. Fetching ASG activity history..."
 echo "----------------------------------------------------------------"
