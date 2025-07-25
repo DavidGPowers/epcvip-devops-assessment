@@ -22,6 +22,13 @@ variable "instance_type" {
   default     = "t3.micro"
 }
 
+# ADD: Variable for EC2 Key Pair name
+variable "key_name" {
+  description = "The name of the EC2 Key Pair to allow SSH access to the instances. The key pair must be created in the AWS region beforehand."
+  type        = string
+  default     = null
+}
+
 variable "create_ssm_instance_profile" {
   description = "If true, the module will create an IAM role and instance profile with permissions for SSM Session Manager. This cannot be true if 'iam_instance_profile_arn' is also set."
   type        = bool

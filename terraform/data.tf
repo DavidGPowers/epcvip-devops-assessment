@@ -4,6 +4,13 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+# Data source to get the public IP of the machine running terraform.
+# This is used to automatically set the SSH ingress rule.
+# UPDATED: Changed URL to the suggested service, api.ipify.org.
+data "http" "my_public_ip" {
+  url = "https://api.ipify.org"
+}
+
 # in production it is likely that networking will exist and be discoverable via tags
 # data "aws_vpc" "app_vpc" {
 #   filter {

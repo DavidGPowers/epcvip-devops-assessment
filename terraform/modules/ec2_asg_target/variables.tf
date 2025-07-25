@@ -1,5 +1,4 @@
 # variables.tf
-# This file defines the input variables for the web application service module.
 
 # Application Naming
 variable "app_name" {
@@ -27,11 +26,24 @@ variable "subnet_ids" {
   }
 }
 
+# ADD: New variable for SSH ingress CIDR blocks
+variable "ssh_ingress_cidr_blocks" {
+  description = <<EOT
+A list of CIDR blocks to allow SSH (port 22) ingress from.
+SECURITY NOTE: It is strongly recommended to restrict this to your IP address (e.g., ["YOUR_IP/32"])
+instead of leaving it open to the internet (e.g., ["0.0.0.0/0"]).
+EOT
+  type        = list(string)
+  default     = []
+}
+
 # ALB Configuration
 variable "alb_source_security_group_id" {
   description = "The ID of the security group attached to the ALB. This is used to allow traffic from the ALB to the EC2 instances."
   type        = string
 }
+
+# ... (rest of the variables are unchanged)
 
 # ALB Listener Rule Configuration
 variable "alb_listener_arn" {

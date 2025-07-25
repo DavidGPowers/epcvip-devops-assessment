@@ -5,17 +5,25 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    # Provider for TLS key generation
+    tls = {
+      source  = "hashicorp/tls"
+      version = ">= 4.0"
+    }
+    # Provider to write local files (e.g., the private key)
+    local = {
+      source  = "hashicorp/local"
+      version = ">= 2.1"
+    }
+    # Provider to make HTTP requests (e.g., to get public IP)
+    http = {
+      source  = "hashicorp/http"
+      version = ">= 3.0"
+    }
   }
 }
 
 # Configure the AWS Provider
 provider "aws" {
   profile = "epcvip-asg"
-
-
-  # cannot use default tags due to insufficient privileges in EPCVIP Sandbox
-  # User: arn:aws:iam::711685268649:user/david.p is not authorized to perform: iam:TagInstanceProfile
-  # default_tags {
-  #   tags = local.common_tags
-  # }
 }

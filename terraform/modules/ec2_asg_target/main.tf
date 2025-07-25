@@ -1,16 +1,13 @@
 # main.tf
-# This file defines the core resources for the web application service:
-# an ALB Target Group, a Security Group, an Auto Scaling Group, an optional ALB Listener Rule,
-# and optional Auto Scaling policies.
 
 # 1. AWS ALB Target Group
 resource "aws_lb_target_group" "app_target_group" {
+  # ... (no changes here)
   name     = local.app_target_group_name
   port     = var.target_group_port
   protocol = var.target_group_protocol
   vpc_id   = var.vpc_id
 
-  # short deregistration delay to reduce scale down time - consider parameterization for prod
   deregistration_delay = 20
 
   health_check {
@@ -29,8 +26,17 @@ resource "aws_lb_target_group" "app_target_group" {
 # 2. AWS Security Group for EC2 Instances
 resource "aws_security_group" "ec2_target_sg" {
   name_prefix = "${var.app_name}-ec2-sg-"
-  description = "Allow traffic from ALB to EC2 instances for ${var.app_name}"
+  description = "Allow traffic from ALB and SSH for ${var.app_name}"
   vpc_id      = var.vpc_id
+
+  # ADD: New ingress rule to allow SSH access.
+  ingress {
+    description = "Allow SSH access from specified CIDR blocks"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = var.ssh_ingress_cidr_blocks
+  }
 
   ingress {
     description     = "Allow traffic from the Application Load Balancer"
@@ -52,6 +58,7 @@ resource "aws_security_group" "ec2_target_sg" {
 
 # 3. AWS Auto Scaling Group (ASG)
 resource "aws_autoscaling_group" "app_asg" {
+  # ... (no changes here)
   name                = local.app_asg_name
   max_size            = var.max_size
   min_size            = var.min_size
@@ -76,6 +83,7 @@ resource "aws_autoscaling_group" "app_asg" {
 
 # 4. AWS ALB Listener Rule
 resource "aws_lb_listener_rule" "app_listener_rule" {
+  # ... (no changes here)
   count = local.should_create_listener_rule ? 1 : 0
 
   listener_arn = var.alb_listener_arn
@@ -116,6 +124,7 @@ resource "aws_lb_listener_rule" "app_listener_rule" {
 
 # 5. Auto Scaling Policies and Alarms (Step Scaling)
 resource "aws_autoscaling_policy" "scale_up" {
+  # ... (no changes here)
   count = var.enable_cpu_scaling_policies ? 1 : 0
 
   name                   = "${local.app_asg_name}-scale-up"
@@ -130,6 +139,7 @@ resource "aws_autoscaling_policy" "scale_up" {
 }
 
 resource "aws_autoscaling_policy" "scale_down" {
+  # ... (no changes here)
   count = var.enable_cpu_scaling_policies ? 1 : 0
 
   name                   = "${local.app_asg_name}-scale-down"
@@ -144,6 +154,7 @@ resource "aws_autoscaling_policy" "scale_down" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  # ... (no changes here)
   count = var.enable_cpu_scaling_policies ? 1 : 0
 
   alarm_name          = "${local.app_asg_name}-cpu-high-alarm"
@@ -165,6 +176,7 @@ resource "aws_cloudwatch_metric_alarm" "cpu_high" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "cpu_low" {
+  # ... (no changes here)
   count = var.enable_cpu_scaling_policies ? 1 : 0
 
   alarm_name          = "${local.app_asg_name}-cpu-low-alarm"

@@ -1,8 +1,8 @@
 module "basic_vpc" {
   source = "./modules/basic_vpc"
 
-  project_name         = "dp-webapp"
-  target_environment   = "dev"
+  project_name       = "dp-webapp"
+  target_environment = "dev"
 
   # in prod use IP Address Manager (IPAM)
   vpc_cidr_block       = "10.100.0.0/16"
