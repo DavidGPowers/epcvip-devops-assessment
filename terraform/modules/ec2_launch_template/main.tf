@@ -40,7 +40,14 @@ resource "aws_iam_instance_profile" "ssm_instance_profile" {
   name_prefix = "${var.ec2_template_prefix}-ssm-profile-"
   role        = aws_iam_role.ssm_role[0].name
 
-  tags = local.common_tags
+  # insufficient privileges to tag instance profiles in EPCVIP sandbox
+  # Error: creating IAM Instance Profile (dp-webapp-dev-ssm-profile-20250724220958955000000002): 
+  # operation error IAM: CreateInstanceProfile, https response error StatusCode: 403, 
+  # RequestID: 93bb7a7f-cfc3-49d4-b409-04fc39a2783a, api error AccessDenied: 
+  # User: arn:aws:iam::711685268649:user/david.p is not authorized to perform: iam:TagInstanceProfile on 
+  # resource: arn:aws:iam::711685268649:instance-profile/dp-webapp-dev-ssm-profile-20250724220958955000000002 
+  # because no identity-based policy allows the iam:TagInstanceProfile action
+  # tags = local.common_tags
 }
 
 
@@ -115,36 +122,38 @@ resource "aws_launch_template" "main" {
   tags = local.common_tags
 }
 
-# The aws_key_pair resource block has been removed.
 
-resource "aws_ssm_parameter" "project_ami_id" {
-  name        = "/ec2/launch-templates/${var.ec2_template_prefix}/ami_id"
-  type        = "String"
-  value       = local.ami_id_for_launch_template
-  description = "AMI ID used for EC2 Launch Template ${var.ec2_template_prefix}"
-  tags        = local.common_tags
-}
 
-resource "aws_ssm_parameter" "launch_template_id" {
-  name        = "/ec2/launch-templates/${var.ec2_template_prefix}/id"
-  type        = "String"
-  value       = aws_launch_template.main.id
-  description = "ID of the EC2 Launch Template for ${var.ec2_template_prefix}"
-  tags        = local.common_tags
-}
+# insufficient privileges to create SSM Parameters in EPCVIP Sandbox
+# AccessDeniedException: User: arn:aws:iam::711685268649:user/david.p is not authorized to perform: ssm:PutParameter
+# resource "aws_ssm_parameter" "project_ami_id" {
+#   name        = "/ec2/launch-templates/${var.ec2_template_prefix}/ami_id"
+#   type        = "String"
+#   value       = local.ami_id_for_launch_template
+#   description = "AMI ID used for EC2 Launch Template ${var.ec2_template_prefix}"
+#   tags        = local.common_tags
+# }
 
-resource "aws_ssm_parameter" "launch_template_arn" {
-  name        = "/ec2/launch-templates/${var.ec2_template_prefix}/arn"
-  type        = "String"
-  value       = aws_launch_template.main.arn
-  description = "ARN of the EC2 Launch Template for ${var.ec2_template_prefix}"
-  tags        = local.common_tags
-}
+# resource "aws_ssm_parameter" "launch_template_id" {
+#   name        = "/ec2/launch-templates/${var.ec2_template_prefix}/id"
+#   type        = "String"
+#   value       = aws_launch_template.main.id
+#   description = "ID of the EC2 Launch Template for ${var.ec2_template_prefix}"
+#   tags        = local.common_tags
+# }
 
-resource "aws_ssm_parameter" "launch_template_latest_version" {
-  name        = "/ec2/launch-templates/${var.ec2_template_prefix}/latest_version"
-  type        = "String"
-  value       = aws_launch_template.main.latest_version
-  description = "Latest version of the EC2 Launch Template for ${var.ec2_template_prefix}"
-  tags        = local.common_tags
-}
+# resource "aws_ssm_parameter" "launch_template_arn" {
+#   name        = "/ec2/launch-templates/${var.ec2_template_prefix}/arn"
+#   type        = "String"
+#   value       = aws_launch_template.main.arn
+#   description = "ARN of the EC2 Launch Template for ${var.ec2_template_prefix}"
+#   tags        = local.common_tags
+# }
+
+# resource "aws_ssm_parameter" "launch_template_latest_version" {
+#   name        = "/ec2/launch-templates/${var.ec2_template_prefix}/latest_version"
+#   type        = "String"
+#   value       = aws_launch_template.main.latest_version
+#   description = "Latest version of the EC2 Launch Template for ${var.ec2_template_prefix}"
+#   tags        = local.common_tags
+# }

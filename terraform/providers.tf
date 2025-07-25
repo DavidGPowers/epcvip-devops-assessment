@@ -11,7 +11,11 @@ terraform {
 # Configure the AWS Provider
 provider "aws" {
   profile = "epcvip-asg"
-  default_tags {
-    tags = local.common_tags
-  }
+
+
+  # cannot use default tags due to insufficient privileges in EPCVIP Sandbox
+  # User: arn:aws:iam::711685268649:user/david.p is not authorized to perform: iam:TagInstanceProfile
+  # default_tags {
+  #   tags = local.common_tags
+  # }
 }

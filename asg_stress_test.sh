@@ -51,7 +51,6 @@ echo "Target environment set to: ${TARGET_ENVIRONMENT}"
 echo "----------------------------------------------------------------"
 
 # 2. Automatically determine the AWS region from the AWS CLI config, with a fallback.
-AWS_REGION=$(aws configure get region)
 AWS_REGION=${AWS_REGION:-us-east-1} # Fallback to us-east-1 if not configured
 echo "Using AWS Region: ${AWS_REGION}"
 

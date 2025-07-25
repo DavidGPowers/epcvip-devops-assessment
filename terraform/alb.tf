@@ -19,7 +19,10 @@ module "shared_alb" {
   https_enabled = false
 
   # ALB Access Logging (optional)
-  enable_access_logs                       = true
+  # insufficient priveleges to create s3 bucket in EPCVIP Sandbox
+# AccessDenied: User: arn:aws:iam::711685268649:user/david.p is not authorized to perform: s3:CreateBucket 
+
+  enable_access_logs                       = false
   access_logs_s3_bucket_name               = local.alb_log_bucket_name
   access_logs_s3_prefix                    = local.project_name
   access_logs_s3_bucket_versioning_enabled = true
