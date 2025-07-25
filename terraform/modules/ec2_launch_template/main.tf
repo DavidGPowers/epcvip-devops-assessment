@@ -51,8 +51,8 @@ resource "aws_launch_template" "main" {
   image_id      = local.ami_id_for_launch_template
   instance_type = var.instance_type
   # ADD: The key_name for SSH access. It's null if not provided.
-  key_name      = var.key_name
-  user_data     = var.user_data == "" ? null : base64encode(var.user_data)
+  key_name  = var.key_name
+  user_data = var.user_data == "" ? null : base64encode(var.user_data)
 
   block_device_mappings {
     device_name = "/dev/sda1"

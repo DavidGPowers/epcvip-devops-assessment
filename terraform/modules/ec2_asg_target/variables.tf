@@ -43,8 +43,6 @@ variable "alb_source_security_group_id" {
   type        = string
 }
 
-# ... (rest of the variables are unchanged)
-
 # ALB Listener Rule Configuration
 variable "alb_listener_arn" {
   description = "The ARN of the ALB listener to attach the rule to. Required if any listener rule conditions are provided."

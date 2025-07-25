@@ -1,20 +1,20 @@
 module "ec2_asg_target" {
   source = "./modules/ec2_asg_target" # Adjust the path to this module
 
-  app_name                       = local.project_name
-  target_environment             = local.target_environment
-  vpc_id                         = module.basic_vpc.vpc_id
+  app_name           = local.project_name
+  target_environment = local.target_environment
+  vpc_id             = module.basic_vpc.vpc_id
   # FIX: Point the Auto Scaling Group to the public subnets.
-  subnet_ids                     = module.basic_vpc.public_subnet_ids
+  subnet_ids                   = module.basic_vpc.public_subnet_ids
   alb_source_security_group_id = module.shared_alb.alb_security_group_id
 
   # Use chomp() to remove any trailing newlines from the HTTP response.
-  ssh_ingress_cidr_blocks        = ["${chomp(data.http.my_public_ip.response_body)}/32"]
+  ssh_ingress_cidr_blocks = ["${chomp(data.http.my_public_ip.response_body)}/32"]
 
   # Target Group configuration
-  target_group_port   = 80
+  target_group_port     = 80
   target_group_protocol = "HTTP"
-  health_check_path   = "/"
+  health_check_path     = "/"
   health_check_matcher  = "200"
 
   # Auto Scaling Group configuration
@@ -25,8 +25,8 @@ module "ec2_asg_target" {
   max_size                = 6
 
   # in prod with shared alb rules will likely include path and/or host headers
-  alb_listener_arn         = module.shared_alb.alb_listener_http_arn
-  listener_rule_priority   = 10
+  alb_listener_arn           = module.shared_alb.alb_listener_http_arn
+  listener_rule_priority     = 10
   listener_rule_http_methods = ["GET"]
 
   enable_cpu_scaling_policies = true
