@@ -8,7 +8,7 @@ You will need the following command-line tools installed:
 
 1.  **Terraform**: For managing infrastructure as code.
 2.  **AWS CLI**: For interacting with AWS services.
-3.  **Session Manager Plugin**: An extension for the AWS CLI required for the `asg_stress_test.sh` script.
+3.  **SSH Client**: For connecting to the EC2 instances. (This is typically pre-installed on macOS and Linux).
 
 ### 1. Install Terraform
 
@@ -46,35 +46,6 @@ sudo ./aws/install
 
 Download and run the official MSI installer from the AWS documentation:
 -   **Link**: [Installing the AWS CLI version 2 on Windows](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-windows.html)
-
-### 3. Install the Session Manager Plugin
-
-This plugin allows the AWS CLI to connect to EC2 instances via SSM Session Manager, which is required by the stress test script.
-
-#### macOS
-
-Using Homebrew (recommended):
-```sh
-brew install --cask session-manager-plugin
-```
-Or, using the official installer:
-```sh
-curl "[https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip](https://s3.amazonaws.com/session-manager-downloads/plugin/latest/mac/sessionmanager-bundle.zip)" -o "sessionmanager-bundle.zip"
-unzip session-manager-bundle.zip
-sudo ./sessionmanager-bundle/install -i /usr/local/sessionmanagerplugin -b /usr/local/bin/session-manager-plugin
-```
-
-#### Linux (64-bit)
-
-```sh
-curl "[https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm](https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_64bit/session-manager-plugin.rpm)" -o "session-manager-plugin.rpm"
-sudo yum install -y session-manager-plugin.rpm
-```
-
-#### Windows
-
-Download and run the installer from the AWS documentation:
--   **Link**: [Installing the Session Manager plugin on Windows](https://docs.aws.amazon.com/systems-manager/latest/userguide/install-plugin-windows.html)
 
 ---
 
@@ -115,3 +86,11 @@ export AWS_REGION=us-east-1
 ```
 
 By setting these variables, all subsequent `aws` and `terraform` commands in that terminal session will automatically use the correct profile and target the correct region, ensuring consistency with the project's configuration. You can add these lines to your shell's startup file (e.g., `~/.bash_profile`, `~/.zshrc`) to make them permanent.
+
+### 3. SSH Access
+
+This project has been configured to use SSH for instance access instead of SSM Session Manager.
+
+* **Key Generation**: When you run `terraform apply`, a new 4096-bit RSA key pair is generated. The public key is uploaded to AWS as an EC2 Key Pair, and the private key is saved to your local machine.
+* **Private Key Location**: The private key (`.pem` file) is automatically saved to your home directory's `.ssh` folder. The exact path is an output of the Terraform apply command, typically something like `~/.ssh/dp-webapp-dev-key.pem`.
+* **Connecting to an Instance**: To connect to an instance, you will need its public IP address and the private key.
