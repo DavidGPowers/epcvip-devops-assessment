@@ -7,8 +7,6 @@ module "ec2_launch_template" {
   # Set to false as we are no longer using SSM for instance access.
   create_ssm_instance_profile = false
 
-  # FIX: The key_name is now sourced from the terraform-generated key pair,
-  # instead of the "your-key-pair-name" placeholder.
   key_name = aws_key_pair.generated_key.key_name
 
   # Associate a public IP address to make instances reachable from the internet.
